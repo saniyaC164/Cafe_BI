@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import kpi, mba
+from routers import kpi, mba, inventory
 
 app = FastAPI(
     title       = "Cafe BI API",
@@ -18,11 +18,12 @@ app.add_middleware(
 )
 
 # ── Routers ────────────────────────────────────────────────────────────────
-app.include_router(kpi.router, prefix="/api/kpi")
-app.include_router(mba.router, prefix="/api/mba")
+app.include_router(kpi.router,       prefix="/api/kpi")
+app.include_router(mba.router,       prefix="/api/mba")
+app.include_router(inventory.router, prefix="/api/inventory")
 
 # More routers will be added here as features are built:
-# from routers import sentiment, forecasting, inventory
+# from routers import sentiment, forecasting
 # app.include_router(sentiment.router,   prefix="/api/sentiment")
 # app.include_router(forecasting.router, prefix="/api/forecast")
 # app.include_router(inventory.router,   prefix="/api/inventory")
