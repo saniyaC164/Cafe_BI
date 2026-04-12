@@ -5,7 +5,7 @@ import KpiPage from './pages/KpiPage'
 import MbaPage from './pages/MbaPage'
 import SentimentPage from './pages/SentimentPage'
 import ForecastingPage from './pages/ForecastingPage'
-import { InventoryPage } from './pages/Placeholders'
+import InventoryPage from './pages/InventoryPage'
 
 export default function App() {
   return (
