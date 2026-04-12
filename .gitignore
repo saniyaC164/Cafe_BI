@@ -1,3 +1,8 @@
 BACKEND/.env
 BACKEND/__pycache__/
 .venv/
+BACKEND/routers/__pycache__/
+BACKEND/services/__pycache__/
+BACKEND/schemas/__pycache__/
+__pycache__/
+*.pyc
