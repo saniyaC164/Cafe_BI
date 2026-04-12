@@ -2,7 +2,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Overview from './pages/Overview'
 import KpiPage from './pages/KpiPage'
-import { MbaPage, SentimentPage, ForecastingPage, InventoryPage } from './pages/Placeholders'
+import MbaPage from './pages/MbaPage'
+import SentimentPage from './pages/SentimentPage'
+import { ForecastingPage, InventoryPage } from './pages/Placeholders'
 
 export default function App() {
   return (
