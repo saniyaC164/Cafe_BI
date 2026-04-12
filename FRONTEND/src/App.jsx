@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Overview from './pages/Overview'
-import { KpiPage, MbaPage, SentimentPage, ForecastingPage, InventoryPage } from './pages/Placeholders'
+import KpiPage from './pages/KpiPage'
+import { MbaPage, SentimentPage, ForecastingPage, InventoryPage } from './pages/Placeholders'
 
 export default function App() {
   return (
