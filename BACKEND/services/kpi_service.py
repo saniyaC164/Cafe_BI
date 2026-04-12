@@ -10,10 +10,10 @@ from schemas.kpi import (
 # ── date range filter helper ───────────────────────────────────────────────
 def _date_filter(period: str) -> str:
     periods = {
-        "7d":   "timestamp >= (SELECT MAX(timestamp) FROM orders) - INTERVAL '7 days'",
-        "30d":  "timestamp >= (SELECT MAX(timestamp) FROM orders) - INTERVAL '30 days'",
-        "90d":  "timestamp >= (SELECT MAX(timestamp) FROM orders) - INTERVAL '90 days'",
-        "365d": "timestamp >= (SELECT MAX(timestamp) FROM orders) - INTERVAL '365 days'",
+        "7d":   "o.timestamp >= (SELECT MAX(timestamp) FROM ORDERS o ) - INTERVAL '7 days'",
+        "30d":  "o.timestamp >= (SELECT MAX(timestamp) FROM ORDERS o ) - INTERVAL '30 days'",
+        "90d":  "o.timestamp >= (SELECT MAX(timestamp) FROM ORDERS o ) - INTERVAL '90 days'",
+        "365d": "o.timestamp >= (SELECT MAX(timestamp) FROM ORDERS o ) - INTERVAL '365 days'",
         "all":  "1=1",
     }
     return periods.get(period, periods["30d"])
@@ -34,7 +34,7 @@ def get_summary(db: Session, period: str) -> KPISummary:
         FROM orders o
         JOIN order_items oi ON o.order_id = oi.order_id
         JOIN menu_items  m  ON oi.item_id = m.item_id
-        WHERE o.{where}
+        WHERE {where}
     """)).fetchone()
 
     total_revenue = float(row[0] or 0)
@@ -58,7 +58,7 @@ def get_revenue_trend(db: Session, period: str) -> list[RevenueByDay]:
             DATE(timestamp)              AS day,
             ROUND(SUM(total_amount)::numeric, 2) AS revenue,
             COUNT(*)                     AS orders
-        FROM orders
+        FROM ORDERS o 
         WHERE {where}
         GROUP BY day
         ORDER BY day
@@ -86,7 +86,7 @@ def get_top_items(db: Session, period: str) -> list[TopItem]:
         FROM order_items oi
         JOIN menu_items  m  ON oi.item_id = m.item_id
         JOIN orders      o  ON oi.order_id = o.order_id
-        WHERE o.{where}
+        WHERE {where}
         GROUP BY m.name, m.category
         ORDER BY total_revenue DESC
         LIMIT 10
@@ -111,7 +111,7 @@ def get_channel_split(db: Session, period: str) -> list[ChannelSplit]:
             channel,
             COUNT(*)                             AS orders,
             ROUND(SUM(total_amount)::numeric, 2) AS revenue
-        FROM orders
+        FROM ORDERS o 
         WHERE {where}
         GROUP BY channel
         ORDER BY orders DESC
@@ -137,7 +137,7 @@ def get_hourly_heatmap(db: Session, period: str) -> list[HourlyHeatmap]:
             EXTRACT(HOUR FROM timestamp)::int      AS hour,
             TO_CHAR(timestamp, 'Dy')               AS day_of_week,
             COUNT(*)                               AS order_count
-        FROM orders
+        FROM ORDERS o 
         WHERE {where}
         GROUP BY hour, day_of_week
         ORDER BY hour, day_of_week
@@ -159,14 +159,14 @@ def get_customer_stats(db: Session, period: str) -> CustomerStats:
 
     # Customers who ordered in this period
     active = db.execute(text(f"""
-        SELECT COUNT(DISTINCT customer_id) FROM orders WHERE {where}
+        SELECT COUNT(DISTINCT customer_id) FROM ORDERS o  WHERE {where}
     """)).scalar() or 0
 
     # Repeat = ordered more than once
     repeat = db.execute(text(f"""
         SELECT COUNT(*) FROM (
             SELECT customer_id
-            FROM orders
+            FROM ORDERS o 
             WHERE {where}
             GROUP BY customer_id
             HAVING COUNT(*) > 1
@@ -196,7 +196,7 @@ def get_payment_split(db: Session, period: str) -> list[PaymentSplit]:
     where = _date_filter(period)
     rows = db.execute(text(f"""
         SELECT payment_method, COUNT(*) AS cnt
-        FROM orders
+        FROM ORDERS o 
         WHERE {where}
         GROUP BY payment_method
         ORDER BY cnt DESC
