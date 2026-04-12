@@ -4,7 +4,8 @@ import Overview from './pages/Overview'
 import KpiPage from './pages/KpiPage'
 import MbaPage from './pages/MbaPage'
 import SentimentPage from './pages/SentimentPage'
-import { ForecastingPage, InventoryPage } from './pages/Placeholders'
+import ForecastingPage from './pages/ForecastingPage'
+import { InventoryPage } from './pages/Placeholders'
 
 export default function App() {
   return (
