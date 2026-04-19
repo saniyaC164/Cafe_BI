@@ -12,7 +12,7 @@ Pipeline:
 import pandas as pd
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from mlxtend.frequent_patterns import apriori, association_rules
+from mlxtend.frequent_patterns import fpgrowth, association_rules
 from mlxtend.preprocessing import TransactionEncoder
 
 from schemas.mba import AssociationRule, ProductPairCount, BundleSuggestion, MBAResult
@@ -42,22 +42,22 @@ def _load_transactions(db: Session, min_orders: int) -> tuple[list[list[str]], i
 
 
 # ── 2. Run Apriori ─────────────────────────────────────────────────────────
-def _run_apriori(
+def _run_fpgrowth(
     baskets: list[list[str]],
     min_support: float,
     min_confidence: float,
     min_lift: float,
 ) -> pd.DataFrame:
-    """Encode transactions and return association rules DataFrame."""
+    """Encode transactions and return association rules using FP-Growth."""
     te = TransactionEncoder()
     te_array = te.fit(baskets).transform(baskets)
     basket_df = pd.DataFrame(te_array, columns=te.columns_)
 
-    frequent_itemsets = apriori(
+    frequent_itemsets = fpgrowth(
         basket_df,
         min_support=min_support,
         use_colnames=True,
-        max_len=2,          # pairs only — keeps it interpretable
+        max_len=2,
     )
 
     if frequent_itemsets.empty:
@@ -71,7 +71,6 @@ def _run_apriori(
     )
     rules = rules[rules["confidence"] >= min_confidence]
     return rules
-
 
 # ── 3. Product pair co-occurrence counts ───────────────────────────────────
 def _get_product_pairs(db: Session, top_n: int = 40) -> list[ProductPairCount]:
@@ -177,7 +176,7 @@ def get_mba_results(
             total_orders_analysed=0,
         )
 
-    rules_df      = _run_apriori(baskets, min_support, min_confidence, min_lift)
+    rules_df = _run_fpgrowth(baskets, min_support, min_confidence, min_lift)
     formatted     = _format_rules(rules_df)
     pairs         = _get_product_pairs(db)
     bundles       = _build_bundle_suggestions(rules_df) if not rules_df.empty else []

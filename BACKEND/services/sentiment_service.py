@@ -1,30 +1,16 @@
-"""
-Sentiment Analysis service
-============================
-Strategy:
-  - VADER compound score used as numeric sentiment value (-1 to +1)
-  - Stored `sentiment` label (from generation) used for classification
-    because VADER struggles with complaint-phrased neutral sentences
-  - Aspect tags already stored in reviews.aspect_tags (comma-separated)
-  - Item-level sentiment detected by scanning review_text for menu item names
-
-All heavy VADER scoring is done once at startup and cached in memory
-via a module-level dict. On a fresh request it scores any unscored reviews.
-"""
-
 import re
 from collections import Counter
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import numpy as np
+from scipy.special import softmax
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 from schemas.sentiment import (
     ReviewEntry, SentimentTrend, AspectScore,
     ItemSentiment, SentimentSummary, WordFrequency,
     SentimentDashboard,
 )
-
-_analyzer = SentimentIntensityAnalyzer()
 
 # Simple stopwords to filter out of word frequency
 _STOPWORDS = {
@@ -45,14 +31,82 @@ _MENU_ITEMS = [
 ]
 
 
-# ── helpers ────────────────────────────────────────────────────────────────
+MODEL_NAME = "cardiffnlp/twitter-roberta-base-sentiment"
 
-def _score(text: str) -> float:
-    return round(_analyzer.polarity_scores(text)["compound"], 4)
+# Load once at module import time — takes 3-5 seconds on startup
+_tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+_model     = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+_model.eval()  # set to inference mode, disables dropout
+
+# Label order from this model: 0 = negative, 1 = neutral, 2 = positive
+_LABELS = ["negative", "neutral", "positive"]
+
+def _score(input_text: str) -> float:
+    encoded = _tokenizer(
+        input_text,
+        return_tensors="pt",
+        truncation=True,
+        max_length=512,
+    )
+    import torch
+    with torch.no_grad():
+        output = _model(**encoded)
+    scores = softmax(output.logits[0].numpy())
+    compound = float(scores[2]) - float(scores[0])
+    return round(compound, 4)
 
 
-def _tokenize(text: str) -> list[str]:
-    words = re.findall(r"[a-z]+", text.lower())
+def _classify(input_text: str) -> str:
+    encoded = _tokenizer(
+        input_text,
+        return_tensors="pt",
+        truncation=True,
+        max_length=512,
+    )
+    import torch
+    with torch.no_grad():
+        output = _model(**encoded)
+    scores   = softmax(output.logits[0].numpy())
+    best_idx = int(np.argmax(scores))
+    return _LABELS[best_idx]
+# Module-level cache: {review_id: (compound_score, predicted_label)}
+_score_cache: dict[int, tuple[float, str]] = {}
+
+def _warm_cache(db) -> None:
+    """
+    Score all reviews at startup and store results in _score_cache.
+    Called once when the app starts. Takes 2-5 minutes on CPU.
+    Subsequent requests are instant — served from cache.
+    """
+    from sqlalchemy import text as sa_text
+    rows = db.execute(sa_text(
+        "SELECT review_id, review_text FROM reviews ORDER BY review_id"
+    )).fetchall()
+
+    print(f"Warming RoBERTa cache for {len(rows)} reviews...")
+    for review_id, review_text in rows:
+        if review_id not in _score_cache:
+            compound = _score(review_text)
+            label    = _classify(review_text)
+            _score_cache[review_id] = (compound, label)
+    print("RoBERTa cache warm — all reviews scored.")
+
+
+def _get_score(review_id: int, review_text: str) -> float:
+    """Get compound score from cache, scoring on-the-fly if not cached."""
+    if review_id not in _score_cache:
+        _score_cache[review_id] = (_score(review_text), _classify(review_text))
+    return _score_cache[review_id][0]
+
+
+def _get_label(review_id: int, review_text: str) -> str:
+    """Get RoBERTa-predicted label from cache."""
+    if review_id not in _score_cache:
+        _score_cache[review_id] = (_score(review_text), _classify(review_text))
+    return _score_cache[review_id][1]
+
+def _tokenize(input_text: str) -> list[str]:
+    words = re.findall(r"[a-z]+", input_text.lower())
     return [w for w in words if w not in _STOPWORDS and len(w) > 3]
 
 
@@ -194,8 +248,8 @@ def get_recent_reviews(
             source         = r[1],
             rating         = int(r[2]),
             review_text    = r[3],
-            sentiment      = r[4],
-            compound_score = _score(r[3]),
+            sentiment = _get_label(int(r[0]), r[3]),
+            compound_score = _get_score(int(r[0]), r[3]),
             aspect_tags    = [t.strip() for t in r[5].split(",") if t.strip()] if r[5] else [],
             date           = str(r[6]),
         )

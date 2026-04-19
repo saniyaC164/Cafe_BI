@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from contextlib import asynccontextmanager
+from database import SessionLocal
 from routers import kpi, mba, inventory, sentiment, forecasting
 from middleware import (
     RequestLoggingMiddleware,
@@ -8,11 +9,28 @@ from middleware import (
     CacheMiddleware,
     ErrorHandlerMiddleware,
 )
+import threading 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    def warm():
+        db = SessionLocal()
+        try:
+            from services.sentiment_service import _warm_cache
+            _warm_cache(db)
+        except Exception as e:
+            print(f"Cache warming error: {e}")
+        finally:
+            db.close()
+
+    thread = threading.Thread(target=warm, daemon=True)
+    thread.start()
+    yield
+
+    
 app = FastAPI(
-    title       = "Cafe BI API",
-    description = "Business intelligence backend for cafe analytics",
-    version     = "1.0.0",
+    title="Cafe BI API",
+    lifespan=lifespan,
 )
 
 # ── Middleware (order matters — outermost runs first on request) ───────────
