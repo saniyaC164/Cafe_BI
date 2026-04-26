@@ -71,9 +71,9 @@ h4 {
 
 .card {
   background: var(--card-bg);
-  border: 1px solid var(--border);
+  /* border: 1px solid var(--border); */
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 1px 1px 1px 1px #cce7c9;
   padding: 20px;
 }
 
@@ -219,7 +219,7 @@ h4 {
   padding: 10px 14px;
   font-size: 11px;
   font-weight: 500;
-  color: var(--text-secondary);
+  /* color: black; */
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 1px solid var(--border);
@@ -338,3 +338,22 @@ h4 {
   width: 100%;
   height: 320px;
 }
+
+/* .chart-wrap-tall text {
+  fill: black;
+  font-weight: 500;
+}
+
+.card div tbody th {
+  color: black;
+  font-weight: 500;
+}
+
+.card tspan {
+  fill: black;
+  font-weight: 500;
+}
+
+.card div table thead tr {
+  color: black;
+} */

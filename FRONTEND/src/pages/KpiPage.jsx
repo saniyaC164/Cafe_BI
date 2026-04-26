@@ -274,7 +274,7 @@ export default function KpiPage() {
             {/* ── Hourly heatmap ── */}
             <div className="card">
                 <SectionHeader title="Order heatmap — hour × day of week">
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 11, color: 'var(--text-muted)' }}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 11, color: 'black' }}>
                         <div style={{ width: 12, height: 12, background: '#dbeafe', borderRadius: 2 }} /> Low
                         <div style={{ width: 12, height: 12, background: '#3b82f6', borderRadius: 2 }} /> High
                     </div>

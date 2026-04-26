@@ -183,22 +183,22 @@ export default function ForecastingPage() {
                 {loading ? <LoadingTiles count={4} /> : summary ? (
                     <>
                         <div className="metric-tile" style={{ borderTop: '3px solid #f59e0b' }}>
-                            <div className="label">Next 7 days</div>
+                            <div className="label" style={{ color: 'black', fontWeight: 700 }}>Next 7 days</div>
                             <div className="value">{fmt(summary.predicted_next_7_days, 'currency')}</div>
                             <div className="sub">Predicted revenue</div>
                         </div>
                         <div className="metric-tile" style={{ borderTop: '3px solid #f59e0b' }}>
-                            <div className="label">Next 30 days</div>
+                            <div className="label" style={{ color: 'black', fontWeight: 700 }}>Next 30 days</div>
                             <div className="value">{fmt(summary.predicted_next_30_days, 'currency')}</div>
                             <div className="sub">Predicted revenue</div>
                         </div>
                         <div className="metric-tile" style={{ borderTop: '3px solid #8b5cf6' }}>
-                            <div className="label">Avg daily forecast</div>
+                            <div className="label" style={{ color: 'black', fontWeight: 700 }}>Avg daily forecast</div>
                             <div className="value">{fmt(summary.avg_daily_forecast, 'currency')}</div>
                             <div className="sub">Per day average</div>
                         </div>
                         <div className="metric-tile">
-                            <div className="label">Trend direction</div>
+                            <div className="label" style={{ color: 'black', fontWeight: 700 }}  >Trend direction</div>
                             <div style={{ marginTop: 6 }}>
                                 <TrendBadge direction={summary.trend_direction} />
                             </div>

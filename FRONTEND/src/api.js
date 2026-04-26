@@ -1,9 +1,48 @@
 const BASE = 'http://localhost:8000/api'
 
+function getToken() {
+    return localStorage.getItem('token')
+}
+
 async function get(path) {
-    const res = await fetch(`${BASE}${path}`)
+    const token = getToken()
+    const res = await fetch(`${BASE}${path}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    if (res.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+        return
+    }
     if (!res.ok) throw new Error(`API error ${res.status}: ${path}`)
     return res.json()
+}
+
+export async function loginUser(email, password) {
+    const form = new URLSearchParams()
+    form.append('username', email)
+    form.append('password', password)
+
+    const res = await fetch(`${BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: form,
+    })
+    if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.detail || 'Login failed')
+    }
+    const data = await res.json()
+    localStorage.setItem('token', data.access_token)
+    localStorage.setItem('user', JSON.stringify({ name: data.name, email: data.email, role: data.role }))
+    return data
+}
+
+export function logoutUser() {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    window.location.href = '/login'
 }
 
 // ── KPI ───────────────────────────────────────────────

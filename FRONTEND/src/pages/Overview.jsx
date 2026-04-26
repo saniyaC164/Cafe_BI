@@ -79,7 +79,7 @@ export default function Overview() {
                     {loading ? <div className="skeleton" style={{ height: 120 }} /> : (
                         <div style={{ overflowX: 'auto' }}>
                             <table className="data-table">
-                                <thead><tr><th>Date</th><th>Revenue</th><th>Orders</th></tr></thead>
+                                <thead><tr><th style={{ color: 'black', fontWeight: 700 }}>Date</th><th style={{ color: 'black', fontWeight: 700 }}>Revenue</th><th style={{ color: 'black', fontWeight: 700 }}>Orders</th></tr></thead>
                                 <tbody>
                                     {revTrend.slice(-7).map(r => (
                                         <tr key={r.date}>
@@ -104,7 +104,7 @@ export default function Overview() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                             {bundles.map((b, i) => (
                                 <div key={i} style={{
-                                    background: '#fffbeb', border: '1px solid #fde68a',
+                                    background: '#fef9ee', border: '1px solid #fde68a',
                                     borderRadius: 8, padding: '10px 14px',
                                 }}>
                                     <div style={{ fontWeight: 500, fontSize: 13 }}>

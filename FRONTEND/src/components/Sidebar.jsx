@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { logoutUser } from '../api'
 
 const NAV = [
     { to: '/', label: 'Overview', icon: '▦' },
@@ -94,8 +95,29 @@ export default function Sidebar() {
                 ))}
             </nav>
 
-            <div style={footerStyle}>
-                Backend: localhost:8000
+            <div style={{ padding: '16px 10px', borderTop: '1px solid #1e293b' }}>
+                {(() => {
+                    const user = JSON.parse(localStorage.getItem('user') || '{}')
+                    return (
+                        <div style={{ marginBottom: 10, padding: '0 8px' }}>
+                            <div style={{ fontSize: 12, fontWeight: 500, color: '#f1f5f9' }}>{user.name}</div>
+                            <div style={{ fontSize: 11, color: '#475569' }}>{user.email}</div>
+                        </div>
+                    )
+                })()}
+                <button
+                    onClick={logoutUser}
+                    style={{
+                        width: '100%', padding: '8px 12px', borderRadius: 8,
+                        background: 'transparent', border: '1px solid #295aa7',
+                        color: '#c5ccd5', fontSize: 12, cursor: 'pointer',
+                        textAlign: 'left', transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => e.target.style.background = '#1e293b'}
+                    onMouseLeave={e => e.target.style.background = 'transparent'}
+                >
+                    Sign out
+                </button>
             </div>
         </aside>
     )

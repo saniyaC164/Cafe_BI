@@ -186,19 +186,19 @@ export default function InventoryPage() {
                 ) : (
                     <>
                         <div className="metric-tile" style={{ borderTop: '3px solid #3b82f6' }}>
-                            <div className="label">Total ingredients</div>
+                            <div className="label" style={{ color: 'black', fontWeight: 700 }}>Total ingredients</div>
                             <div className="value">{stock.length}</div>
                             <div className="sub">Tracked items</div>
                         </div>
                         <div className="metric-tile" style={{ borderTop: '3px solid #f59e0b' }}>
-                            <div className="label">Need reorder</div>
+                            <div className="label" style={{ color: 'black', fontWeight: 700 }}>Need reorder</div>
                             <div className="value" style={{ color: alertCount > 0 ? '#b91c1c' : 'var(--text-primary)' }}>
                                 {alertCount}
                             </div>
                             <div className="sub">{criticalCount} critical · {lowCount} low</div>
                         </div>
                         <div className="metric-tile" style={{ borderTop: '3px solid #22c55e' }}>
-                            <div className="label">Reorder suggestions</div>
+                            <div className="label" style={{ color: 'black', fontWeight: 700 }}>Reorder suggestions</div>
                             <div className="value">{reorders.length}</div>
                             <div className="sub">Items to action</div>
                         </div>
@@ -273,14 +273,14 @@ export default function InventoryPage() {
                             <table className="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Ingredient</th>
-                                        <th>Unit</th>
-                                        <th style={{ width: 180 }}>Stock level</th>
-                                        <th>Current</th>
-                                        <th>Reorder at</th>
-                                        <th>Days left</th>
-                                        <th>Status</th>
-                                        <th>Supplier</th>
+                                        <th style={{ color: 'black' }}>Ingredient</th>
+                                        <th style={{ color: 'black' }}>Unit</th>
+                                        <th style={{ width: 180 }, { color: 'black' }}>Stock level</th>
+                                        <th style={{ color: 'black' }}>Current</th>
+                                        <th style={{ color: 'black' }}>Reorder at</th>
+                                        <th style={{ color: 'black' }}>Days left</th>
+                                        <th style={{ color: 'black' }}>Status</th>
+                                        <th style={{ color: 'black' }}>Supplier</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -333,8 +333,8 @@ export default function InventoryPage() {
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={depletionChart} layout="vertical" margin={{ left: 4, right: 16 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                                        <XAxis type="number" tick={{ fontSize: 10 }} />
-                                        <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
+                                        <XAxis type="number" tick={{ fontSize: 10, color: 'black' }} />
+                                        <YAxis type="category" dataKey="name" tick={{ fontSize: 11, color: 'black' }} width={80} />
                                         <Tooltip content={<CustomTooltip />} />
                                         <Bar dataKey="usage" name="Daily usage" fill="#14b8a6" radius={[0, 4, 4, 0]} />
                                     </BarChart>

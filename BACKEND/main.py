@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from database import SessionLocal
 from routers import kpi, mba, inventory, sentiment, forecasting
+from routers import kpi, mba, inventory, sentiment, forecasting, auth
+from auth import get_current_user
+from fastapi import Depends
 from middleware import (
     RequestLoggingMiddleware,
     RateLimitMiddleware,
@@ -27,7 +30,7 @@ async def lifespan(app: FastAPI):
     thread.start()
     yield
 
-    
+
 app = FastAPI(
     title="Cafe BI API",
     lifespan=lifespan,
@@ -56,11 +59,12 @@ app.add_middleware(
 )
 
 # ── Routers ────────────────────────────────────────────────────────────────
-app.include_router(kpi.router,         prefix="/api/kpi")
-app.include_router(mba.router,         prefix="/api/mba")
-app.include_router(inventory.router,   prefix="/api/inventory")
-app.include_router(sentiment.router,   prefix="/api/sentiment")
-app.include_router(forecasting.router, prefix="/api/forecast")
+app.include_router(auth.router, prefix="/api/auth")
+app.include_router(kpi.router,         prefix="/api/kpi",       dependencies=[Depends(get_current_user)])
+app.include_router(mba.router,         prefix="/api/mba",       dependencies=[Depends(get_current_user)])
+app.include_router(inventory.router,   prefix="/api/inventory", dependencies=[Depends(get_current_user)])
+app.include_router(sentiment.router,   prefix="/api/sentiment", dependencies=[Depends(get_current_user)])
+app.include_router(forecasting.router, prefix="/api/forecast",  dependencies=[Depends(get_current_user)])
 
 
 # ── Health + root ──────────────────────────────────────────────────────────

@@ -191,12 +191,12 @@ export default function SentimentPage() {
                 {loading ? <LoadingTiles count={4} /> : summary ? (
                     <>
                         <div className="metric-tile" style={{ borderTop: '3px solid #22c55e' }}>
-                            <div className="label">Total reviews</div>
+                            <div className="label text-md" style={{ color: 'black', fontWeight: 700 }}>Total reviews</div>
                             <div className="value">{summary.total_reviews.toLocaleString()}</div>
                             <div className="sub">{summary.google_count} Google · {summary.zomato_count} Zomato</div>
                         </div>
                         <div className="metric-tile" style={{ borderTop: '3px solid #fbbf24' }}>
-                            <div className="label">Avg rating</div>
+                            <div className="label" style={{ color: 'black', fontWeight: 700 }}>Avg rating</div>
                             <div className="value" style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
                                 {summary.avg_rating}
                                 <span style={{ fontSize: 16, color: '#fbbf24' }}>★</span>
@@ -204,12 +204,12 @@ export default function SentimentPage() {
                             <div className="sub">Out of 5.0</div>
                         </div>
                         <div className="metric-tile" style={{ borderTop: '3px solid #22c55e' }}>
-                            <div className="label">Positive</div>
+                            <div className="label" style={{ color: 'black', fontWeight: 700 }}>Positive</div>
                             <div className="value" style={{ color: '#15803d' }}>{summary.positive_pct}%</div>
                             <div className="sub">{Math.round(summary.total_reviews * summary.positive_pct / 100)} reviews</div>
                         </div>
                         <div className="metric-tile" style={{ borderTop: '3px solid #ef4444' }}>
-                            <div className="label">Negative</div>
+                            <div className="label" style={{ color: 'black', fontWeight: 700 }}>Negative</div>
                             <div className="value" style={{ color: '#b91c1c' }}>{summary.negative_pct}%</div>
                             <div className="sub">{Math.round(summary.total_reviews * summary.negative_pct / 100)} reviews</div>
                         </div>

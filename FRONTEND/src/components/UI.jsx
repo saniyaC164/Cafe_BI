@@ -1,7 +1,7 @@
 export function MetricTile({ label, value, sub, accent }) {
     return (
         <div className="metric-tile" style={accent ? { borderTop: `3px solid ${accent}` } : {}}>
-            <div className="label">{label}</div>
+            <div className="label" style={{ color: "black" }}><b>{label}</b></div>
             <div className="value">{value}</div>
             {sub && <div className="sub">{sub}</div>}
         </div>

@@ -278,11 +278,11 @@ export default function MbaPage() {
                                 <table className="data-table">
                                     <thead>
                                         <tr>
-                                            <th>If customer orders…</th>
-                                            <th>They also order…</th>
-                                            <th style={{ width: 180 }}>Confidence</th>
-                                            <th>Lift</th>
-                                            <th>Support</th>
+                                            <th style={{ color: 'black' }}>If customer orders…</th>
+                                            <th style={{ color: 'black' }}>They also order…</th>
+                                            <th style={{ width: 180 }, { color: 'black' }}>Confidence</th>
+                                            <th style={{ color: 'black' }}>Lift</th>
+                                            <th style={{ color: 'black' }}>Support</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -315,7 +315,7 @@ export default function MbaPage() {
             {/* ── Product pair heatmap ── */}
             <div className="card">
                 <SectionHeader title="Product pair co-occurrence heatmap">
-                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: 12, color: 'black' }}>
                         How often any two items appear in the same order
                     </span>
                 </SectionHeader>
