@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import Literal
-
+from sqlalchemy import text
 from database import get_db
 from services import sentiment_service
 from schemas.sentiment import (
@@ -92,3 +92,66 @@ def get_negative_words(db: Session = Depends(get_db)):
     """Top 20 words in negative reviews — feeds the negative word cloud."""
     _, neg = sentiment_service.get_word_frequencies(db)
     return neg
+
+@router.get("/evaluate")
+def evaluate_sentiment(db: Session = Depends(get_db)):
+    """
+    Temporary endpoint — compares RoBERTa predictions against
+    stored ground truth labels. Remove after recording results.
+    """
+    from services.sentiment_service import _get_label
+    from collections import defaultdict
+
+    rows = db.execute(text("""
+        SELECT review_id, review_text, sentiment
+        FROM reviews
+        ORDER BY review_id
+    """)).fetchall()
+
+    labels    = ["positive", "neutral", "negative"]
+    correct   = 0
+    total     = len(rows)
+
+    # Per-class counters: TP, FP, FN
+    tp = defaultdict(int)
+    fp = defaultdict(int)
+    fn = defaultdict(int)
+
+    for review_id, review_text, true_label in rows:
+        predicted = _get_label(int(review_id), review_text)
+
+        if predicted == true_label:
+            correct += 1
+            tp[true_label] += 1
+        else:
+            fp[predicted] += 1
+            fn[true_label] += 1
+
+    # Build per-class metrics
+    class_metrics = {}
+    for label in labels:
+        precision = tp[label] / (tp[label] + fp[label]) if (tp[label] + fp[label]) > 0 else 0
+        recall    = tp[label] / (tp[label] + fn[label]) if (tp[label] + fn[label]) > 0 else 0
+        f1        = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0
+        support   = tp[label] + fn[label]
+        class_metrics[label] = {
+            "precision": round(precision, 3),
+            "recall":    round(recall,    3),
+            "f1":        round(f1,        3),
+            "support":   support,
+        }
+
+    macro_p  = round(sum(m["precision"] for m in class_metrics.values()) / len(labels), 3)
+    macro_r  = round(sum(m["recall"]    for m in class_metrics.values()) / len(labels), 3)
+    macro_f1 = round(sum(m["f1"]        for m in class_metrics.values()) / len(labels), 3)
+
+    return {
+        "total_reviews":    total,
+        "overall_accuracy": round(correct / total * 100, 1),
+        "class_metrics":    class_metrics,
+        "macro_avg": {
+            "precision": macro_p,
+            "recall":    macro_r,
+            "f1":        macro_f1,
+        },
+    }
