@@ -30,81 +30,6 @@ _MENU_ITEMS = [
     "chicken sandwich",
 ]
 
-
-MODEL_NAME = "cardiffnlp/twitter-roberta-base-sentiment"
-
-# Load once at module import time — takes 3-5 seconds on startup
-_tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-_model     = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
-_model.eval()  # set to inference mode, disables dropout
-
-# Label order from this model: 0 = negative, 1 = neutral, 2 = positive
-_LABELS = ["negative", "neutral", "positive"]
-
-def _score(input_text: str) -> float:
-    encoded = _tokenizer(
-        input_text,
-        return_tensors="pt",
-        truncation=True,
-        max_length=512,
-    )
-    import torch
-    with torch.no_grad():
-        output = _model(**encoded)
-    scores = softmax(output.logits[0].numpy())
-    compound = float(scores[2]) - float(scores[0])
-    return round(compound, 4)
-
-
-def _classify(input_text: str) -> str:
-    encoded = _tokenizer(
-        input_text,
-        return_tensors="pt",
-        truncation=True,
-        max_length=512,
-    )
-    import torch
-    with torch.no_grad():
-        output = _model(**encoded)
-    scores   = softmax(output.logits[0].numpy())
-    best_idx = int(np.argmax(scores))
-    return _LABELS[best_idx]
-# Module-level cache: {review_id: (compound_score, predicted_label)}
-_score_cache: dict[int, tuple[float, str]] = {}
-
-def _warm_cache(db) -> None:
-    """
-    Score all reviews at startup and store results in _score_cache.
-    Called once when the app starts. Takes 2-5 minutes on CPU.
-    Subsequent requests are instant — served from cache.
-    """
-    from sqlalchemy import text as sa_text
-    rows = db.execute(sa_text(
-        "SELECT review_id, review_text FROM reviews ORDER BY review_id"
-    )).fetchall()
-
-    print(f"Warming RoBERTa cache for {len(rows)} reviews...")
-    for review_id, review_text in rows:
-        if review_id not in _score_cache:
-            compound = _score(review_text)
-            label    = _classify(review_text)
-            _score_cache[review_id] = (compound, label)
-    print("RoBERTa cache warm — all reviews scored.")
-
-
-def _get_score(review_id: int, review_text: str) -> float:
-    """Get compound score from cache, scoring on-the-fly if not cached."""
-    if review_id not in _score_cache:
-        _score_cache[review_id] = (_score(review_text), _classify(review_text))
-    return _score_cache[review_id][0]
-
-
-def _get_label(review_id: int, review_text: str) -> str:
-    """Get RoBERTa-predicted label from cache."""
-    if review_id not in _score_cache:
-        _score_cache[review_id] = (_score(review_text), _classify(review_text))
-    return _score_cache[review_id][1]
-
 def _tokenize(input_text: str) -> list[str]:
     words = re.findall(r"[a-z]+", input_text.lower())
     return [w for w in words if w not in _STOPWORDS and len(w) > 3]
@@ -115,29 +40,30 @@ def get_summary(db: Session, source: str = "all") -> SentimentSummary:
     source_filter = "" if source == "all" else f"AND source = '{source}'"
 
     row = db.execute(text(f"""
-        SELECT
-            COUNT(*)                                    AS total,
-            ROUND(AVG(rating)::numeric, 2)              AS avg_rating,
-            SUM(CASE WHEN sentiment='positive' THEN 1 ELSE 0 END) AS pos,
-            SUM(CASE WHEN sentiment='negative' THEN 1 ELSE 0 END) AS neg,
-            SUM(CASE WHEN sentiment='neutral'  THEN 1 ELSE 0 END) AS neu,
-            SUM(CASE WHEN source='Google'      THEN 1 ELSE 0 END) AS google,
-            SUM(CASE WHEN source='Zomato'      THEN 1 ELSE 0 END) AS zomato
-        FROM reviews
-        WHERE 1=1 {source_filter}
-    """)).fetchone()
+    SELECT
+        COUNT(*)                                                AS total,
+        ROUND(AVG(rating)::numeric, 2)                          AS avg_rating,
+        ROUND(AVG(roberta_score)::numeric, 4)                   AS avg_compound,
+        SUM(CASE WHEN roberta_sentiment='positive' THEN 1 ELSE 0 END) AS pos,
+        SUM(CASE WHEN roberta_sentiment='negative' THEN 1 ELSE 0 END) AS neg,
+        SUM(CASE WHEN roberta_sentiment='neutral'  THEN 1 ELSE 0 END) AS neu,
+        SUM(CASE WHEN source='Google'              THEN 1 ELSE 0 END) AS google,
+        SUM(CASE WHEN source='Zomato'              THEN 1 ELSE 0 END) AS zomato
+    FROM reviews
+    WHERE 1=1 {source_filter}
+""")).fetchone()
 
     total = int(row[0]) or 1
     return SentimentSummary(
-        total_reviews      = total,
-        avg_rating         = float(row[1] or 0),
-        avg_compound_score = 0.0,       # computed separately to avoid full-table score
-        positive_pct       = round(int(row[2]) / total * 100, 1),
-        negative_pct       = round(int(row[3]) / total * 100, 1),
-        neutral_pct        = round(int(row[4]) / total * 100, 1),
-        google_count       = int(row[5]),
-        zomato_count       = int(row[6]),
-    )
+    total_reviews      = total,
+    avg_rating         = float(row[1] or 0),
+    avg_compound_score = float(row[2] or 0),   # now real, not 0.0
+    positive_pct       = round(int(row[3]) / total * 100, 1),
+    negative_pct       = round(int(row[4]) / total * 100, 1),
+    neutral_pct        = round(int(row[5]) / total * 100, 1),
+    google_count       = int(row[6]),
+    zomato_count       = int(row[7]),
+)
 
 
 # ── 2. Weekly sentiment trend ──────────────────────────────────────────────
@@ -182,7 +108,7 @@ def get_aspect_scores(db: Session) -> list[AspectScore]:
         SELECT
             aspect_tags,
             rating,
-            sentiment
+            roberta_sentiment
         FROM reviews
         WHERE aspect_tags IS NOT NULL AND aspect_tags != ''
     """)).fetchall()
@@ -234,26 +160,26 @@ def get_recent_reviews(
     where = ("WHERE " + " AND ".join(filters)) if filters else ""
 
     rows = db.execute(text(f"""
-        SELECT review_id, source, rating, review_text,
-               sentiment, aspect_tags, date
-        FROM reviews
-        {where}
-        ORDER BY date DESC
-        LIMIT :limit
-    """), {"limit": limit}).fetchall()
+    SELECT review_id, source, rating, review_text,
+           roberta_sentiment, roberta_score, aspect_tags, date
+    FROM reviews
+    {where}
+    ORDER BY date DESC
+    LIMIT :limit
+"""), {"limit": limit}).fetchall()
 
     return [
-        ReviewEntry(
-            review_id      = int(r[0]),
-            source         = r[1],
-            rating         = int(r[2]),
-            review_text    = r[3],
-            sentiment = _get_label(int(r[0]), r[3]),
-            compound_score = _get_score(int(r[0]), r[3]),
-            aspect_tags    = [t.strip() for t in r[5].split(",") if t.strip()] if r[5] else [],
-            date           = str(r[6]),
-        )
-        for r in rows
+    ReviewEntry(
+        review_id      = int(r[0]),
+        source         = r[1],
+        rating         = int(r[2]),
+        review_text    = r[3],
+        sentiment      = r[4] or "neutral",
+        compound_score = float(r[5] or 0),
+        aspect_tags    = [t.strip() for t in r[6].split(",") if t.strip()] if r[6] else [],
+        date           = str(r[7]),
+    )
+    for r in rows
     ]
 
 
@@ -261,7 +187,7 @@ def get_recent_reviews(
 def get_item_sentiment(db: Session) -> list[ItemSentiment]:
     """Scan review_text for menu item mentions and aggregate sentiment."""
     rows = db.execute(text("""
-        SELECT review_text, sentiment, rating FROM reviews
+        SELECT review_text, roberta_sentiment, rating FROM reviews
     """)).fetchall()
 
     from collections import defaultdict
@@ -306,7 +232,7 @@ def get_item_sentiment(db: Session) -> list[ItemSentiment]:
 # ── 6. Word frequency (positive + negative) ────────────────────────────────
 def get_word_frequencies(db: Session) -> tuple[list[WordFrequency], list[WordFrequency]]:
     rows = db.execute(text("""
-        SELECT review_text, sentiment FROM reviews
+        SELECT review_text, roberta_sentiment FROM reviews
     """)).fetchall()
 
     pos_words: Counter = Counter()

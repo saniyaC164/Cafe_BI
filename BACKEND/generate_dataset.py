@@ -670,3 +670,7 @@ with engine.connect() as conn:
         print(f"  {table_name:<28} -> {count:,} rows")
 
 print("\nDone. All tables seeded successfully.")
+# After seeding the database, run score_reviews.py to populate
+# roberta_sentiment and roberta_score columns using the RoBERTa model.
+# This only needs to be done once per dataset generation.
+print("\nReminder: run score_reviews.py to populate RoBERTa sentiment scores.")

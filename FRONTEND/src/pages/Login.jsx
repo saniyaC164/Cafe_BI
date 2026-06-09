@@ -97,10 +97,10 @@ export default function Login() {
                         {loading ? 'Signing in…' : 'Sign in'}
                     </button>
                 </form>
-                {/* 
-                <div style={{ marginTop: 20, padding: '12px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#64748b', textAlign: 'center' }}>
-                    Default: admin@brewanalytics.com / admin123
-                </div> */}
+                {
+                    <div style={{ marginTop: 20, padding: '12px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#64748b', textAlign: 'center' }}>
+                        Default: admin@brewanalytics.com / admin123
+                    </div>}
             </div>
         </div>
     )

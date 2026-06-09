@@ -12,28 +12,11 @@ from middleware import (
     CacheMiddleware,
     ErrorHandlerMiddleware,
 )
-import threading 
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    def warm():
-        db = SessionLocal()
-        try:
-            from services.sentiment_service import _warm_cache
-            _warm_cache(db)
-        except Exception as e:
-            print(f"Cache warming error: {e}")
-        finally:
-            db.close()
-
-    thread = threading.Thread(target=warm, daemon=True)
-    thread.start()
-    yield
-
 
 app = FastAPI(
     title="Cafe BI API",
-    lifespan=lifespan,
+    description="Business intelligence backend for cafe analytics",
+    version="1.0.0",
 )
 
 # ── Middleware (order matters — outermost runs first on request) ───────────
