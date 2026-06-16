@@ -27,7 +27,7 @@ from sqlalchemy import create_engine, text
 # ─────────────────────────────────────────────
 # CONFIG — edit these
 # ─────────────────────────────────────────────
-DB_URL = "postgresql://postgres:saniyadb@localhost:5432/cafe_db"
+DB_URL = "postgresql://cafe_db_9ccr_user:PIWhpBe2wO1oUt56rfz4udgZTcsNqp1i@dpg-d8an69u7r5hc73ejgq1g-a/cafe_db_9ccr"
 SEED   = 42          # reproducibility
 START  = date(2024, 1, 1)
 END    = date(2024, 12, 31)
