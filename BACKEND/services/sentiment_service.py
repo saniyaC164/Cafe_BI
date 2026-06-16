@@ -2,9 +2,6 @@ import re
 from collections import Counter
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-import numpy as np
-from scipy.special import softmax
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 from schemas.sentiment import (
     ReviewEntry, SentimentTrend, AspectScore,
